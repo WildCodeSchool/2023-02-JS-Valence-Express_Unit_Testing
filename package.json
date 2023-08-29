@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
+    "test:watch": "jest --watchAll",
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "prettier": "pretty-quick --staged",

@@ -2,9 +2,8 @@ const supertest = require('supertest');
 
 const app = require('../src/app');
 const { albumToCreate, albumKeys, trackKeys } = require('./testsData');
-
 describe('🎧 ALBUMS ROUTES', () => {
-  const persistentDatas = {};
+  const persistentData = {};
 
   it('should get the albums list 🧪 /api/albums', async () => {
     const res = await supertest(app)
@@ -30,10 +29,10 @@ describe('🎧 ALBUMS ROUTES', () => {
     expect(Array.isArray(res.body)).toBe(true);
 
     res.body.forEach((track) => {
-      expect(track).toHaveProperty('id_album', 1);
       trackKeys.map((prop) => {
         expect(track).toHaveProperty(prop);
       });
+      expect(track).toHaveProperty('id_album', 1);
     });
   });
 
@@ -41,7 +40,9 @@ describe('🎧 ALBUMS ROUTES', () => {
     const res = await supertest(app)
       .get('/api/albums/1')
       .expect(200)
-      .expect('Content-Type', /json/);
+      .expect('Content-type', /json/);
+
+    expect(Array.isArray(res.body)).toBe(false);
 
     albumKeys.map((prop) => {
       expect(res.body).toHaveProperty(prop);
@@ -58,31 +59,32 @@ describe('🎧 ALBUMS ROUTES', () => {
     albumKeys.map((prop) => {
       expect(res.body).toHaveProperty(prop);
     });
-    persistentDatas.createdAlbum = res.body;
+    persistentData.album = res.body;
   });
 
-  it(`should update the created album title 🧪 /api/albums/`, async () => {
-    await supertest(app)
-      .put(`/api/albums/${persistentDatas.createdAlbum.id}`)
-      .send({
-        title: 'The Light Side of the Sun',
-      })
-      .expect(204);
+  describe('modifying an album:', () => {
+    let album;
+    beforeEach(async () => {
+      const res = await supertest(app).post('/api/albums').send(albumToCreate);
+      album = res.body;
+    });
 
-    const res = await supertest(app).get(
-      `/api/albums/${persistentDatas.createdAlbum.id}`
-    );
+    it(`should update the created album title 🧪 /api/albums/:id`, async () => {
+      await supertest(app)
+        .put(`/api/albums/${album.id}`)
+        .send({ title: 'The Dark Side of the Sun' })
+        .expect(204);
 
-    expect(res.body).toHaveProperty('title', 'The Light Side of the Sun');
-  });
+      const res = await supertest(app).get(`/api/albums/${album.id}`);
 
-  it(`should delete the created album 🧪 /api/albums/4`, async () => {
-    await supertest(app)
-      .delete(`/api/albums/${persistentDatas.createdAlbum.id}`)
-      .expect(204);
+      expect(res.body).toHaveProperty('title', 'The Dark Side of the Sun');
+    });
 
-    await supertest(app)
-      .get(`/api/albums/${persistentDatas.createdAlbum.id}`)
-      .expect(404);
+    it(`should delete the created album 🧪 /api/albums/:id`, async () => {
+      // faire requete http DELETE pour supprimer l'album qu'on a persisté
+      await supertest(app).delete(`/api/albums/${album.id}`).expect(204);
+      // faire requete http GET sur le endpoint de l'abum et vérifier qu'on obtient bien un 404
+      await supertest(app).get(`/api/albums/${album.id}`).expect(404);
+    });
   });
 });
